@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
+from sklearn.pipeline import Pipeline
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 
 lines = np.loadtxt("lab2/aa.ssdi.di.fct.unl.pt_files_bluegills.txt", skiprows=1)
 
@@ -77,6 +81,30 @@ print("Coefficients: {}".format(bestCoefficients))
 print("Validation error: {}".format(lowestValidationError))
 testError = mean_squared_error(testLengthsZScore, np.polyval(bestCoefficients, testAgesZScore))
 print("Test error: {}".format(testError))
+
+plt.legend(loc="lower right")
+plt.show()
+
+### Regression using Scikit-Learn Pipeline ###
+
+ages = getArrayColumn(lines, 0).reshape(-1, 1)
+lengths = getArrayColumn(lines, 1)
+trainingAges, testingAges, trainingLengths, testingLengths = train_test_split(ages, lengths)
+
+xSeq = np.linspace(trainingAges.min(), trainingAges.max(), 1000).reshape(-1, 1)
+
+plt.figure("Blue gill size (Scikit-Learn)")
+plt.xlabel('Age')
+plt.ylabel('Length')
+plt.scatter(trainingAges, trainingLengths, s=5, c="b")
+plt.scatter(testingAges, testingLengths, s=1, c="r")
+
+for polynomialDegree in range(1, 7) :
+    pipeline = make_pipeline(StandardScaler(), PolynomialFeatures(polynomialDegree), LinearRegression())
+    pipeline.fit(trainingAges, trainingLengths)
+    trainingError = mean_squared_error(trainingLengths, pipeline.predict(trainingAges))
+    testingError = mean_squared_error(testingLengths, pipeline.predict(testingAges))
+    plt.plot(xSeq, pipeline.predict(xSeq), linewidth=0.75, label="{} / {} / {}".format(polynomialDegree, round(trainingError, 4), round(testingError, 4)))
 
 plt.legend(loc="lower right")
 plt.show()
