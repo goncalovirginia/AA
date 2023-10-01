@@ -38,11 +38,12 @@ trainingLengthsZScore = getArrayColumn(trainingDataZScores, 1)
 validationAgesZScore = getArrayColumn(validationDataZScores, 0)
 validationLengthsZScore = getArrayColumn(validationDataZScores, 1)
 
-# Build graph with training data points
+# Build graph with training and validation data points
 plt.figure("Blue gill size")
 plt.xlabel('Age')
 plt.ylabel('Length')
-plt.scatter(trainingAgesZScore, trainingLengthsZScore, s=2)
+plt.scatter(trainingAgesZScore, trainingLengthsZScore, s=5, c="b")
+plt.scatter(validationAgesZScore, validationLengthsZScore, s=1, c="r")
 
 # Create evenly spaced numbers on the x-axis (age) for smooth plotting
 xSeq = np.linspace(trainingAgesZScore.min(), trainingAgesZScore.max(), 1000).reshape(-1, 1)
