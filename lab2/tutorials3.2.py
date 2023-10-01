@@ -55,6 +55,7 @@ xSeq = np.linspace(trainingAgesZScore.min(), trainingAgesZScore.max(), 1000).res
 
 bestPolynomialDegree = 1
 lowestValidationError = math.inf
+bestCoefficients = math.inf
 
 # Create and plot polynomial (regression) curves from degrees 1 to 6, calculating their training and validation errors
 for polynomialDegree in range(1, 7) :
@@ -66,12 +67,15 @@ for polynomialDegree in range(1, 7) :
     plt.plot(xSeq, np.polyval(coefficients, xSeq), linewidth=0.75, label="{} / {} / {}".format(polynomialDegree, round(trainingError, 4), round(validationError, 4)))
 
     if validationError < lowestValidationError :
-        lowestValidationError = validationError
         bestPolynomialDegree = polynomialDegree
+        lowestValidationError = validationError
+        bestCoefficients = coefficients
+
 
 print("Best polynomial degree for regression: {}".format(bestPolynomialDegree))
+print("Coefficients: {}".format(bestCoefficients))
 print("Validation error: {}".format(lowestValidationError))
-testError = mean_squared_error(testLengthsZScore, np.polyval(coefficients, testAgesZScore))
+testError = mean_squared_error(testLengthsZScore, np.polyval(bestCoefficients, testAgesZScore))
 print("Test error: {}".format(testError))
 
 plt.legend(loc="lower right")
