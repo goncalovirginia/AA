@@ -20,8 +20,7 @@ trainRows = np.loadtxt("project1/X_train.csv", skiprows=1, usecols=range(0, 13),
 
 X = trainRows[0:255]
 y = trainRows[1:256]
-print(bodyCoords(1, trainRows)[0])
-print(bodyCoords(1, trainRows)[1])
+
 for polynomialDegree in range(1, 10) :
     pipeline = make_pipeline(PolynomialFeatures(polynomialDegree), LinearRegression())
     pipeline.fit(X, y)
@@ -50,11 +49,11 @@ for polynomialDegree in range(1, 10) :
     plt.figure("Predicted Paths - Polynomial Degree: {}".format(polynomialDegree))
     plt.xlabel('x')
     plt.ylabel('y')
-    plt.plot(column(body1Coords, 0), column(body1Coords, 1), label=1, linewidth=4)
-    plt.plot(column(body2Coords, 0), column(body2Coords, 1), label=2, linewidth=4)
-    plt.plot(column(body3Coords, 0), column(body3Coords, 1), label=3, linewidth=4)
-    plt.plot(column(body1CoordsPred, 0), column(body1CoordsPred, 1), label="Pred 1", linewidth=1)
-    plt.plot(column(body2CoordsPred, 0), column(body2CoordsPred, 1), label="Pred 2", linewidth=1)
-    plt.plot(column(body3CoordsPred, 0), column(body3CoordsPred, 1), label="Pred 3", linewidth=1)
+    plt.plot(*zip(*body1Coords), label=1, linewidth=4)
+    plt.plot(*zip(*body2Coords), label=2, linewidth=4)
+    plt.plot(*zip(*body3Coords), label=3, linewidth=4)
+    plt.plot(*zip(*body1CoordsPred), label="Pred 1", linewidth=1)
+    plt.plot(*zip(*body2CoordsPred), label="Pred 2", linewidth=1)
+    plt.plot(*zip(*body3CoordsPred), label="Pred 3", linewidth=1)
     plt.legend(loc="best")
     plt.show()
