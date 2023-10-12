@@ -17,7 +17,7 @@ LAST_ROW = 1285000
 NUM_SAMPLES = 5000
 SAMPLE_LENGTH = 257
 
-X_train_dataframe = pd.read_csv("project1/X_train.csv")
+X_train_dataframe = pd.read_csv("project1/X_train2.csv")
 
 def plotSample(startRow) :
     coords = X_train_dataframe[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']][startRow : startRow + SAMPLE_LENGTH];
@@ -66,7 +66,7 @@ def predictAndGenerateSubmissionCsv(filename) :
 
 def createAccelerationColumns() :
     timeAndVelocities = X_train_dataframe.drop(columns=['x_1', 'y_1', 'x_2', 'y_2','x_3', 'y_3', 'Id']).to_numpy()
-    accelerations = []
+    accelerationsRows = []
     
     for sample in range(0, NUM_SAMPLES) :
         for row in range(0, SAMPLE_LENGTH-1) :
@@ -80,19 +80,24 @@ def createAccelerationColumns() :
             for column in range(1, 7) :
                 accelerationsRow.append((nextRow[column] - currRow[column])/deltaTime)
 
-            accelerations.append(accelerationsRow)
+            accelerationsRows.append(accelerationsRow)
         
-        accelerations.append(accelerations[-1])
+        accelerationsRows.append(accelerationsRows[-1])
         
-    return pd.DataFrame(accelerations, columns=['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3'])
+    return pd.DataFrame(accelerationsRows, columns=['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3'])
     
+def format_X_with_accelerations(X):
+    for i in range(1,4):
+        X[f'a_x_{i}'] = 0.0
+        X[f'a_y_{i}'] = 0.0
+
+    formatted_columns = ['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3']
+    return X[formatted_columns]
 
 # Create train and test splits
 
-X = pd.read_csv("project1/X_train_formatted.csv", index_col=[0])
-y = X_train_dataframe.drop(columns=['t', 'Id'])
-y[['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']] = createAccelerationColumns().to_numpy()
-y = y[['x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3']]
+X = pd.read_csv("project1/X_train_formatted2.csv")
+y = pd.read_csv("project1/X_train2.csv")
 X_train, X_test, y_train, y_test = train_test_split(X, y)
 
 # Linear Regression
