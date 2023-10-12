@@ -1,3 +1,8 @@
+""" 
+This model is trained on the idea of predicting line n+1 with line n of each sample.
+It then tries to predict the new positions and velocities by recursively using its own output.
+"""
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,9 +13,10 @@ from sklearn.metrics import mean_squared_error
 import math
 
 LAST_ROW = 1285000
-SAMPLE_STEP = 257
+NUM_SAMPLES = 5000
+SAMPLE_LENGTH = 257
 
-dataFrame = pd.read_csv("project1/X_train.csv").drop(columns='Id')
+dataFrame = pd.read_csv("project1/X_train.csv").drop(columns=['t', 'Id'])
 
 def bodyCoords(body, rows) :
     column = 4 * (body - 1 ) + 1
@@ -20,7 +26,7 @@ def bodyCoords(body, rows) :
     return coords
 
 def plotSample(start) :
-    coords = dataFrame[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']][start : start + SAMPLE_STEP];
+    coords = dataFrame[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']][start : start + SAMPLE_LENGTH];
     print(coords)
 
     plt.figure("Trajectories")
@@ -32,57 +38,56 @@ def plotSample(start) :
     plt.show()
 
 def plotAllSamples() :
-    for start in range(0, LAST_ROW, SAMPLE_STEP) :
+    for start in range(0, LAST_ROW, SAMPLE_LENGTH) :
         plotSample(start)
 
-def createXy() :
+def createXy(numSamples) :
     X = []
     y = []
 
-    for start in range(0, SAMPLE_STEP-1, SAMPLE_STEP) :
-        #sample = dataFrame.iloc[start:start+SAMPLE_STEP].values
-        sample = dataFrame.iloc[start:start+SAMPLE_STEP]
-        startRow = sample.iloc[0].drop(columns='t').values
-        times = sample[['t']].values
-
-        for row in times :
-            row.extend
-
-        print(times)
-        X.extend(sample[0:SAMPLE_STEP-1])
-        y.extend(sample[1:SAMPLE_STEP])
+    for sampleStart in range(0, numSamples*SAMPLE_LENGTH, SAMPLE_LENGTH) :
+        sample = dataFrame.iloc[sampleStart:sampleStart+SAMPLE_LENGTH].to_numpy()
+        X.extend(sample[0:SAMPLE_LENGTH-1])
+        y.extend(sample[1:SAMPLE_LENGTH])
 
     return [X, y]
 
-X, y = createXy()
-
-def trainModel(polynomialDegree) :
-    pipeline = make_pipeline(PolynomialFeatures(polynomialDegree), LinearRegression())
-    pipeline.fit(X, y)
-
-    body1Coords = bodyCoords(1, y)
-    body2Coords = bodyCoords(2, y)
-    body3Coords = bodyCoords(3, y)
-
+def predict(pipeline, startRow) :
     predictions = []
-    predictions.extend(pipeline.predict(np.array(X[0]).reshape(1, -1)))
+    predictions.extend(pipeline.predict(np.array(startRow).reshape(1, -1)))
     
-    for row in range(1, len(X)) :
-        print(predictions[-1])
-        predictions.extend(pipeline.predict(np.array(predictions[-1]).reshape(1, -1)))
+    for sample in range(0, NUM_SAMPLES) :
+        for sampleRow in range(0, SAMPLE_LENGTH) :
+            print(predictions[-1])
+            predictions.extend(pipeline.predict(np.array(predictions[-1]).reshape(1, -1)))
 
-    body1CoordsPred = bodyCoords(1, predictions)
-    body2CoordsPred = bodyCoords(2, predictions)
-    body3CoordsPred = bodyCoords(3, predictions)
+    return predictions
+
+def calculateRMSE(realValues, predictedValues) :
+    body1Coords = bodyCoords(1, realValues)
+    body2Coords = bodyCoords(2, realValues)
+    body3Coords = bodyCoords(3, realValues)
+
+    body1CoordsPred = bodyCoords(1, predictedValues)
+    body2CoordsPred = bodyCoords(2, predictedValues)
+    body3CoordsPred = bodyCoords(3, predictedValues)
 
     body1RMSE = math.sqrt(mean_squared_error(body1Coords, body1CoordsPred))
     body2RMSE = math.sqrt(mean_squared_error(body2Coords, body2CoordsPred))
     body3RMSE = math.sqrt(mean_squared_error(body3Coords, body3CoordsPred))
 
+    return [body1RMSE, body2RMSE, body3RMSE]
+
+X, y = createXy(NUM_SAMPLES)
+
+for polynomialDegree in range(4, 10) :
+    pipeline = make_pipeline(PolynomialFeatures(polynomialDegree), LinearRegression())
+    pipeline.fit(X, y)
+    predictions = predict(pipeline, X[0])
+    body1RMSE, body2RMSE, body3RMSE = calculateRMSE(y, predictions)
+
     print(polynomialDegree)
     print(body1RMSE)
     print(body2RMSE)
     print(body3RMSE)
-
-
 
