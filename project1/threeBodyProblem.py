@@ -20,7 +20,7 @@ SAMPLE_LENGTH = 257
 X_train_dataframe = pd.read_csv("project1/X_train2.csv")
 
 def plotSample(startRow) :
-    coords = X_train_dataframe[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']][startRow : startRow + SAMPLE_LENGTH];
+    coords = X_train_dataframe[['x_1', 'y_1', 'x_2' , 'y_2', 'x_3', 'y_3']][startRow : startRow + SAMPLE_LENGTH];
 
     plt.figure("Trajectories")
     plt.xlabel("x")
@@ -103,19 +103,33 @@ X_train, X_test, y_train, y_test = train_test_split(X, y)
 # Linear Regression
 
 print("Linear Regression:")
-pipeline = make_pipeline(PolynomialFeatures(3), LinearRegression())            
+pipeline = make_pipeline(PolynomialFeatures(2), LinearRegression())            
 pipeline.fit(X_train, y_train)
 y_predicted = pipeline.predict(X_test)
+y_df_predicted = pd.DataFrame(y_predicted, columns=['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3'])
+y_predicted = y_df_predicted.drop(columns=['v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3'])
+y_test = y_test.drop(columns=['v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3'])
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test, y_predicted))))
 
-predictAndGenerateSubmissionCsv("LinearRegressionDegree4")
+#predictAndGenerateSubmissionCsv("LinearRegressionDegree4")
 
 # StandardScaler Linear Regression
 
 print("StandardScaler Linear Regression:")
-pipeline = make_pipeline(StandardScaler(), PolynomialFeatures(3), LinearRegression())            
+pipeline = make_pipeline(StandardScaler(), PolynomialFeatures(2), LinearRegression())            
 pipeline.fit(X_train, y_train)
 y_predicted = pipeline.predict(X_test)
+y_df_predicted = pd.DataFrame(y_predicted, columns=['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3'])
+y_predicted = y_df_predicted.drop(columns=['v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3'])
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test, y_predicted))))
 
-predictAndGenerateSubmissionCsv("StandardScalerLinearRegressionDegree4")
+#predictAndGenerateSubmissionCsv("StandardScalerLinearRegressionDegree4")
+
+
+print("StandardScaler Ridge Regression:")
+pipeline = make_pipeline(StandardScaler(), PolynomialFeatures(2), Ridge())            
+pipeline.fit(X_train, y_train)
+y_predicted = pipeline.predict(X_test)
+y_df_predicted = pd.DataFrame(y_predicted, columns=['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3'])
+y_predicted = y_df_predicted.drop(columns=['v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3'])
+print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test, y_predicted))))
