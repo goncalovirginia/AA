@@ -64,19 +64,41 @@ def predictAndGenerateSubmissionCsv(filename) :
 
     y_predicted_dataframe.to_csv('project1/{}.csv'.format(filename), index=False)
 
-def acceleration() :
-    return
+def createAccelerationColumns() :
+    timeAndVelocities = X_train_dataframe.drop(columns=['x_1', 'y_1', 'x_2', 'y_2','x_3', 'y_3', 'Id']).to_numpy()
+    accelerations = []
+    
+    for sample in range(0, NUM_SAMPLES) :
+        for row in range(0, SAMPLE_LENGTH-1) :
+            currRow = timeAndVelocities[sample*SAMPLE_LENGTH + row]
+            nextRow = timeAndVelocities[sample*SAMPLE_LENGTH + row + 1]
+            accelerationsRow = []
+            deltaTime = nextRow[0] - currRow[0]
+            if deltaTime == 0 :
+                deltaTime = 1
+            
+            for column in range(1, 7) :
+                accelerationsRow.append((nextRow[column] - currRow[column])/deltaTime)
+
+            accelerations.append(accelerationsRow)
+        
+        accelerations.append(accelerations[-1])
+        
+    return pd.DataFrame(accelerations, columns=['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3'])
+    
 
 # Create train and test splits
 
 X = pd.read_csv("project1/X_train_formatted.csv", index_col=[0])
 y = X_train_dataframe.drop(columns=['t', 'Id'])
+y[['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']] = createAccelerationColumns().to_numpy()
+y = y[['x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3']]
 X_train, X_test, y_train, y_test = train_test_split(X, y)
 
 # Linear Regression
 
 print("Linear Regression:")
-pipeline = make_pipeline(PolynomialFeatures(4), LinearRegression())            
+pipeline = make_pipeline(PolynomialFeatures(3), LinearRegression())            
 pipeline.fit(X_train, y_train)
 y_predicted = pipeline.predict(X_test)
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test, y_predicted))))
@@ -86,7 +108,7 @@ predictAndGenerateSubmissionCsv("LinearRegressionDegree4")
 # StandardScaler Linear Regression
 
 print("StandardScaler Linear Regression:")
-pipeline = make_pipeline(StandardScaler(), PolynomialFeatures(4), LinearRegression())            
+pipeline = make_pipeline(StandardScaler(), PolynomialFeatures(3), LinearRegression())            
 pipeline.fit(X_train, y_train)
 y_predicted = pipeline.predict(X_test)
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test, y_predicted))))
