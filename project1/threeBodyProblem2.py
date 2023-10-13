@@ -6,17 +6,20 @@ It then tries to predict the new positions and velocities by recursively using i
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.compose import make_column_transformer
+from sklearn.preprocessing import MaxAbsScaler
 import math
 
 LAST_ROW = 1285000
 NUM_SAMPLES = 5000
 SAMPLE_LENGTH = 257
 
-dataFrame = pd.read_csv("project1/X_train.csv").drop(columns=['t', 'Id'])
+dataFrame = pd.read_csv("project1/X_train3.csv").drop(columns=['t'])
 
 def bodyCoords(body, rows) :
     column = 4 * (body - 1 ) + 1
@@ -50,44 +53,34 @@ def createXy(numSamples) :
         X.extend(sample[0:SAMPLE_LENGTH-1])
         y.extend(sample[1:SAMPLE_LENGTH])
 
-    return [X, y]
+    return [pd.DataFrame(X, columns=dataFrame.columns), pd.DataFrame(y, columns=dataFrame.columns)]
 
-def predict(pipeline, startRow) :
+def predictRecursively(pipeline, startRow) :
     predictions = []
-    predictions.extend(pipeline.predict(np.array(startRow).reshape(1, -1)))
+    predictions.extend(pipeline.predict(np.array(startRow)))
     
     for sample in range(0, NUM_SAMPLES) :
         for sampleRow in range(0, SAMPLE_LENGTH) :
             print(predictions[-1])
-            predictions.extend(pipeline.predict(np.array(predictions[-1]).reshape(1, -1)))
+            predictions.extend(pipeline.predict(np.array(predictions[-1])))
 
     return predictions
 
-def calculateRMSE(realValues, predictedValues) :
-    body1Coords = bodyCoords(1, realValues)
-    body2Coords = bodyCoords(2, realValues)
-    body3Coords = bodyCoords(3, realValues)
-
-    body1CoordsPred = bodyCoords(1, predictedValues)
-    body2CoordsPred = bodyCoords(2, predictedValues)
-    body3CoordsPred = bodyCoords(3, predictedValues)
-
-    body1RMSE = math.sqrt(mean_squared_error(body1Coords, body1CoordsPred))
-    body2RMSE = math.sqrt(mean_squared_error(body2Coords, body2CoordsPred))
-    body3RMSE = math.sqrt(mean_squared_error(body3Coords, body3CoordsPred))
-
-    return [body1RMSE, body2RMSE, body3RMSE]
-
 X, y = createXy(NUM_SAMPLES)
+X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-for polynomialDegree in range(4, 10) :
-    pipeline = make_pipeline(PolynomialFeatures(polynomialDegree), LinearRegression())
-    pipeline.fit(X, y)
-    predictions = predict(pipeline, X[0])
-    body1RMSE, body2RMSE, body3RMSE = calculateRMSE(y, predictions)
+print("Linear Regression:")
+pipeline = make_pipeline(PolynomialFeatures(3), LinearRegression())
+pipeline.fit(X_train, y_train)
+y_predicted = pipeline.predict(X_test)
+y_predicted = pd.DataFrame(y_predicted, columns=dataFrame.columns)
+y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
+print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
 
-    print(polynomialDegree)
-    print(body1RMSE)
-    print(body2RMSE)
-    print(body3RMSE)
-
+print("Acceleration MaxAbsScaler Linear Regression:")
+pipeline = make_pipeline(make_column_transformer((MaxAbsScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']), remainder='passthrough'), PolynomialFeatures(3), LinearRegression())
+pipeline.fit(X_train, y_train)
+y_predicted = pipeline.predict(X_test)
+y_predicted = pd.DataFrame(y_predicted, columns=dataFrame.columns)
+y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
+print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
