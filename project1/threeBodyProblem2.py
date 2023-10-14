@@ -87,7 +87,7 @@ def rowPairDistances(row) :
     return [math.dist(coords1, coords2), math.dist(coords1, coords3), math.dist(coords2, coords3)]
 
 def addPairDistancesFeatures(X) :
-    X[['d_1_2', 'd_1_3', 'd_2_3']] = X.apply(rowAccelerations, axis=1, result_type='expand')
+    X[['d_1_2', 'd_1_3', 'd_2_3']] = X.apply(rowPairDistances, axis=1, result_type='expand')
     return X
 
 X, y = createXy(NUM_SAMPLES)
