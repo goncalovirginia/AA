@@ -117,15 +117,24 @@ def addAccelerationsFeatures(X) :
     X[['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']] = X.apply(rowAccelerations, axis=1, result_type='expand').fillna(0.0)
     return X
 
+def rowPairDistances(row) :
+    coords1 = [row['x_1'], row['y_1']]
+    coords2 = [row['x_2'], row['y_2']]
+    coords3 = [row['x_3'], row['y_3']]
+    return [math.dist(coords1, coords2), math.dist(coords1, coords3), math.dist(coords2, coords3)]
+
+def addPairDistancesFeatures(X) :
+    X[['d_1_2', 'd_1_3', 'd_2_3']] = X.apply(rowAccelerations, axis=1, result_type='expand')
+    return X
+
 # Create train and test splits
 X = pd.read_csv("project1/X_train.csv").drop(['Id'])
-X = addAccelerationsFeatures(X)
 y = pd.read_csv("project1/X_train3.csv")
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.1)
 # Linear Regression
 
 print("Linear Regression:")
-pipeline = make_pipeline(FunctionTransformer(addAccelerationsFeatures), PolynomialFeatures(3), LinearRegression()) 
+pipeline = make_pipeline(FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), PolynomialFeatures(3), LinearRegression()) 
 pipeline.fit(X_train, y_train)
 y_predicted = pipeline.predict(X_test)
 y_predicted = pd.DataFrame(y_predicted, columns=y.columns)
