@@ -99,14 +99,15 @@ print("Linear Regression:")
 pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), 
     PolynomialFeatures(3), LinearRegression())
 pipeline.fit(X_train, y_train)
-y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
-print(y_predicted)
+y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=dataFrame.columns)
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
 
-predictRecursively(pipeline, X.iloc[0])
+#predictRecursively(pipeline, X.iloc[0])
 
 print("Acceleration MaxAbsScaler Linear Regression:")
-pipeline = make_pipeline(make_column_transformer((MaxAbsScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']), remainder='passthrough'), PolynomialFeatures(3), LinearRegression())
+pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), 
+    make_column_transformer((MaxAbsScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']), remainder='passthrough'), 
+    PolynomialFeatures(3), LinearRegression())
 pipeline.fit(X_train, y_train)
-y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
+y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=dataFrame.columns)
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
