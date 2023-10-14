@@ -104,26 +104,31 @@ def createRelativeDistanceColumns(X) :
 
     return pd.DataFrame(relativeDistanceRows, columns=['d_1_2', 'd_1_3', 'd_2_3'])
 
-def format_X_with_accelerations(X):
-    for i in range(1,4):
-        X[f'a_x_{i}'] = 0.0
-        X[f'a_y_{i}'] = 0.0
+def accelerations(p1, p2, p3):
+	a_1 = - (p1 - p2)/(math.dist(p1, p2)**3) - (p1 - p3)/(math.dist(p1, p3)**3)
+	a_2 = - (p2 - p1)/(math.dist(p2, p1)**3) - (p2 - p3)/(math.dist(p2, p3)**3)
+	a_3 = - (p3 - p1)/(math.dist(p3, p1)**3) - (p3 - p2)/(math.dist(p3, p2)**3)
+	return [a_1[0], a_1[1], a_2[0], a_2[1], a_3[0], a_3[1]]
 
-    formatted_columns = ['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3']
-    return X[formatted_columns]
+def rowAccelerations(row) :
+    return accelerations(np.array([row['x_1'], row['y_1']]), np.array([row['x_2'], row['y_2']]), np.array([row['x_3'], row['y_3']]))
+
+def addAccelerationsFeatures(X) :
+    X[['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']] = X.apply(rowAccelerations, axis=1, result_type='expand').fillna(0.0)
+    return X
 
 # Create train and test splits
-X = pd.read_csv("project1/X_train_formatted3.csv")
+X = pd.read_csv("project1/X_train.csv").drop(['Id'])
+X = addAccelerationsFeatures(X)
 y = pd.read_csv("project1/X_train3.csv")
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.1)
-
 # Linear Regression
 
 print("Linear Regression:")
-pipeline = make_pipeline(PolynomialFeatures(3), LinearRegression()) 
+pipeline = make_pipeline(FunctionTransformer(addAccelerationsFeatures), PolynomialFeatures(3), LinearRegression()) 
 pipeline.fit(X_train, y_train)
 y_predicted = pipeline.predict(X_test)
-y_predicted = pd.DataFrame(y_predicted, columns=['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3', 'd_1_2', 'd_1_3', 'd_2_3'])
+y_predicted = pd.DataFrame(y_predicted, columns=y.columns)
 y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
 
@@ -133,30 +138,6 @@ print("StandardScaler Linear Regression:")
 pipeline = make_pipeline(StandardScaler(), PolynomialFeatures(3), LinearRegression()) 
 pipeline.fit(X_train, y_train)
 y_predicted = pipeline.predict(X_test)
-y_predicted = pd.DataFrame(y_predicted, columns=['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3', 'd_1_2', 'd_1_3', 'd_2_3'])
-y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
-
-print("Acceleration StandardScaler Linear Regression:")
-pipeline = make_pipeline(make_column_transformer((StandardScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']), remainder='passthrough'), PolynomialFeatures(3), LinearRegression()) 
-pipeline.fit(X_train, y_train)
-y_predicted = pipeline.predict(X_test)
-y_predicted = pd.DataFrame(y_predicted, columns=['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3', 'd_1_2', 'd_1_3', 'd_2_3'])
-y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
-
-print("Acceleration MinMaxScaler Linear Regression:")
-pipeline = make_pipeline(make_column_transformer((MinMaxScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']), remainder='passthrough'), PolynomialFeatures(3), LinearRegression()) 
-pipeline.fit(X_train, y_train)
-y_predicted = pipeline.predict(X_test)
-y_predicted = pd.DataFrame(y_predicted, columns=['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3', 'd_1_2', 'd_1_3', 'd_2_3'])
-y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
-
-print("Acceleration MaxAbsScaler Linear Regression:")
-pipeline = make_pipeline(make_column_transformer((MaxAbsScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']), remainder='passthrough'), PolynomialFeatures(3), LinearRegression()) 
-pipeline.fit(X_train, y_train)
-y_predicted = pipeline.predict(X_test)
-y_predicted = pd.DataFrame(y_predicted, columns=['t', 'x_1', 'y_1', 'v_x_1', 'v_y_1', 'a_x_1', 'a_y_1', 'x_2', 'y_2', 'v_x_2', 'v_y_2', 'a_x_2', 'a_y_2', 'x_3', 'y_3', 'v_x_3', 'v_y_3', 'a_x_3', 'a_y_3', 'd_1_2', 'd_1_3', 'd_2_3'])
+y_predicted = pd.DataFrame(y_predicted, columns=y.columns)
 y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
