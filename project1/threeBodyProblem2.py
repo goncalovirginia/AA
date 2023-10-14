@@ -15,14 +15,15 @@ from sklearn.metrics import mean_squared_error
 from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import MaxAbsScaler
 import math
-
-np.seterr(divide='ignore', invalid='ignore')
+from skl2onnx import to_onnx
+from skl2onnx.common.data_types import FloatTensorType, StringTensorType
+from skl2onnx import convert_sklearn
 
 LAST_ROW = 1285000
 NUM_SAMPLES = 5000
 SAMPLE_LENGTH = 257
 
-dataFrame = pd.read_csv("project1/X_train_accelerations_pairdistances.csv").drop(columns=['t', 'Id'])
+dataFrame = pd.read_csv("project1/X_train3.csv").drop(columns=['t'])
 
 def bodyCoords(body, rows) :
     column = 4 * (body - 1 ) + 1
@@ -56,7 +57,7 @@ def createXy(numSamples) :
         X.extend(sample[0:SAMPLE_LENGTH-1])
         y.extend(sample[1:SAMPLE_LENGTH])
 
-    return [pd.DataFrame(X, columns=dataFrame.columns), pd.DataFrame(y, columns=dataFrame.columns)]
+    return pd.DataFrame(X, columns=dataFrame.columns), pd.DataFrame(y, columns=dataFrame.columns)
 
 def predictRecursively(pipeline, startRow) :
     predictions = []
@@ -69,17 +70,20 @@ def predictRecursively(pipeline, startRow) :
 
     return predictions
 
+def safeDiv(n, d) :
+    return n / d if d else np.array([0.0, 0.0])
+
 def accelerations(p1, p2, p3):
-	a_1 = - (p1 - p2)/(math.dist(p1, p2)**3) - (p1 - p3)/(math.dist(p1, p3)**3)
-	a_2 = - (p2 - p1)/(math.dist(p2, p1)**3) - (p2 - p3)/(math.dist(p2, p3)**3)
-	a_3 = - (p3 - p1)/(math.dist(p3, p1)**3) - (p3 - p2)/(math.dist(p3, p2)**3)
+	a_1 = - safeDiv(p1 - p2, math.dist(p1, p2)**3) - safeDiv(p1 - p3, math.dist(p1, p3)**3)
+	a_2 = - safeDiv(p2 - p1, math.dist(p2, p1)**3) - safeDiv(p2 - p3, math.dist(p2, p3)**3)
+	a_3 = - safeDiv(p3 - p1, math.dist(p3, p1)**3) - safeDiv(p3 - p2, math.dist(p3, p2)**3)
 	return [a_1[0], a_1[1], a_2[0], a_2[1], a_3[0], a_3[1]]
 
 def rowAccelerations(row) :
     return accelerations(np.array([row['x_1'], row['y_1']]), np.array([row['x_2'], row['y_2']]), np.array([row['x_3'], row['y_3']]))
 
 def addAccelerationsFeatures(X) :
-    X[['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']] = X.apply(rowAccelerations, axis=1, result_type='expand').fillna(0.0)
+    X[['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']] = X.apply(rowAccelerations, axis=1, result_type='expand')
     return X
 
 def rowPairDistances(row) :
@@ -92,6 +96,23 @@ def addPairDistancesFeatures(X) :
     X[['d_1_2', 'd_1_3', 'd_2_3']] = X.apply(rowPairDistances, axis=1, result_type='expand')
     return X
 
+def exportModel(pipeline, rmse) :
+    """
+    initial_type = [('numfeat', FloatTensorType([None, 3])),
+                ('strfeat', StringTensorType([None, 2]))]
+    model_onnx = convert_sklearn(pipeline, initial_types=initial_type)
+    """
+    onx = to_onnx(pipeline, X.iloc[0].to_numpy())
+    with open("model2-{}.onnx".format(rmse), "wb") as f:
+        f.write(onx.SerializeToString())
+
+    import onnxruntime as rt
+    sess = rt.InferenceSession("model2-{}.onnx".format(rmse), providers=["CPUExecutionProvider"])
+    input_name = sess.get_inputs()[0].name
+    label_name = sess.get_outputs()[0].name
+    pred_onnx = sess.run([label_name], {input_name: X_test.astype(np.float64)})[0]
+    print(pred_onnx)
+
 X, y = createXy(NUM_SAMPLES)
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.2)
 
@@ -100,7 +121,9 @@ pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), Functio
     PolynomialFeatures(3), LinearRegression())
 pipeline.fit(X_train, y_train)
 y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=dataFrame.columns)
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
+rmse = mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], squared=False)
+print("RMSE: {}".format(rmse))
+exportModel(pipeline, rmse)
 
 #predictRecursively(pipeline, X.iloc[0])
 
@@ -110,4 +133,6 @@ pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), Functio
     PolynomialFeatures(3), LinearRegression())
 pipeline.fit(X_train, y_train)
 y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=dataFrame.columns)
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
+rmse = mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], squared=False)
+print("RMSE: {}".format(rmse))
+
