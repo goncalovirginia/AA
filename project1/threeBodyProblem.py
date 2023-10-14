@@ -22,10 +22,8 @@ LAST_ROW = 1285000
 NUM_SAMPLES = 5000
 SAMPLE_LENGTH = 257
 
-X_train_dataframe = pd.read_csv("project1/X_train3.csv")
-
 def plotSample(startRow) :
-    coords = X_train_dataframe[['x_1', 'y_1', 'x_2' , 'y_2', 'x_3', 'y_3']][startRow : startRow + SAMPLE_LENGTH];
+    coords = X[['x_1', 'y_1', 'x_2' , 'y_2', 'x_3', 'y_3']][startRow : startRow + SAMPLE_LENGTH];
 
     plt.figure("Trajectories")
     plt.xlabel("x")
@@ -70,40 +68,6 @@ def predictAndGenerateSubmissionCsv(filename) :
 
     y_predicted_dataframe.to_csv('project1/{}.csv'.format(filename), index=False)
 
-def createAccelerationColumns() :
-    timeAndVelocities = X_train_dataframe.drop(columns=['x_1', 'y_1', 'x_2', 'y_2','x_3', 'y_3', 'Id']).to_numpy()
-    accelerationsRows = []
-    
-    for sample in range(0, NUM_SAMPLES) :
-        for row in range(0, SAMPLE_LENGTH-1) :
-            currRow = timeAndVelocities[sample*SAMPLE_LENGTH + row]
-            nextRow = timeAndVelocities[sample*SAMPLE_LENGTH + row + 1]
-            accelerationsRow = []
-            deltaTime = nextRow[0] - currRow[0]
-            if deltaTime == 0 :
-                deltaTime = 1
-            
-            for column in range(1, 7) :
-                accelerationsRow.append((nextRow[column] - currRow[column])/deltaTime)
-
-            accelerationsRows.append(accelerationsRow)
-        
-        accelerationsRows.append(accelerationsRows[-1])
-        
-    return pd.DataFrame(accelerationsRows, columns=['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3'])
-    
-def createRelativeDistanceColumns(X) :
-    coords = X[['x_1', 'y_1', 'x_2', 'y_2','x_3', 'y_3']].to_numpy()
-    relativeDistanceRows = []
-    
-    for row in coords :
-        d_1_2 = math.dist([row[0], row[1]], [row[2], row[3]])
-        d_1_3 = math.dist([row[0], row[1]], [row[4], row[5]])
-        d_2_3 = math.dist([row[2], row[3]], [row[4], row[5]])
-        relativeDistanceRows.append([d_1_2, d_1_3, d_2_3])
-
-    return pd.DataFrame(relativeDistanceRows, columns=['d_1_2', 'd_1_3', 'd_2_3'])
-
 def accelerations(p1, p2, p3):
 	a_1 = - (p1 - p2)/(math.dist(p1, p2)**3) - (p1 - p3)/(math.dist(p1, p3)**3)
 	a_2 = - (p2 - p1)/(math.dist(p2, p1)**3) - (p2 - p3)/(math.dist(p2, p3)**3)
@@ -127,11 +91,9 @@ def addPairDistancesFeatures(X) :
     X[['d_1_2', 'd_1_3', 'd_2_3']] = X.apply(rowAccelerations, axis=1, result_type='expand')
     return X
 
-# Create train and test splits
 X = pd.read_csv("project1/X_train.csv").drop(['Id'])
 y = pd.read_csv("project1/X_train3.csv")
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.1)
-# Linear Regression
 
 print("Linear Regression:")
 pipeline = make_pipeline(FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), PolynomialFeatures(3), LinearRegression()) 
