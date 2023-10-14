@@ -16,11 +16,13 @@ from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import MaxAbsScaler
 import math
 
+np.seterr(divide='ignore', invalid='ignore')
+
 LAST_ROW = 1285000
 NUM_SAMPLES = 5000
 SAMPLE_LENGTH = 257
 
-dataFrame = pd.read_csv("project1/X_train.csv").drop(columns=['t', 'Id'])
+dataFrame = pd.read_csv("project1/X_train_accelerations_pairdistances.csv").drop(columns=['t', 'Id'])
 
 def bodyCoords(body, rows) :
     column = 4 * (body - 1 ) + 1
@@ -94,17 +96,17 @@ X, y = createXy(NUM_SAMPLES)
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.2)
 
 print("Linear Regression:")
-pipeline = make_pipeline(FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), PolynomialFeatures(3), LinearRegression())
+pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), 
+    PolynomialFeatures(3), LinearRegression())
 pipeline.fit(X_train, y_train)
-y_predicted = pipeline.predict(X_test)
-y_predicted = pd.DataFrame(y_predicted, columns=dataFrame.columns)
-y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
+y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
+print(y_predicted)
+print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
+
+predictRecursively(pipeline, X.iloc[0])
 
 print("Acceleration MaxAbsScaler Linear Regression:")
 pipeline = make_pipeline(make_column_transformer((MaxAbsScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']), remainder='passthrough'), PolynomialFeatures(3), LinearRegression())
 pipeline.fit(X_train, y_train)
-y_predicted = pipeline.predict(X_test)
-y_predicted = pd.DataFrame(y_predicted, columns=dataFrame.columns)
-y_predicted = y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted))))
+y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
+print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
