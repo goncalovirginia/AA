@@ -61,12 +61,12 @@ def createXy(numSamples) :
 
 def predictRecursively(pipeline, startRow) :
     predictions = []
-    predictions.extend(pipeline.predict(np.array(startRow)))
+    predictions.append(pipeline.predict(startRow))
     
     for sample in range(0, NUM_SAMPLES) :
         for sampleRow in range(0, SAMPLE_LENGTH) :
             print(predictions[-1])
-            predictions.extend(pipeline.predict(np.array(predictions[-1])))
+            predictions.append(pipeline.predict(pd.DataFrame(predictions[-1], columns=dataFrame.columns)))
 
     return predictions
 
@@ -123,9 +123,8 @@ pipeline.fit(X_train, y_train)
 y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=dataFrame.columns)
 rmse = mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], squared=False)
 print("RMSE: {}".format(rmse))
-exportModel(pipeline, rmse)
 
-#predictRecursively(pipeline, X.iloc[0])
+predictRecursively(pipeline, X.iloc[[0]])
 
 print("Acceleration MaxAbsScaler Linear Regression:")
 pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), 
