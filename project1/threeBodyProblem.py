@@ -9,6 +9,7 @@ from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import MaxAbsScaler
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import RidgeCV
 from sklearn.linear_model import LassoCV
@@ -108,23 +109,15 @@ def addInteractionPotentialsFeatures(X) :
 
 X = pd.read_csv("project1/X_train_acc_ip_pd.csv")
 y = pd.read_csv("project1/y_train_acc_ip_pd.csv")
-X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.1)
 
-print("StandardScaler Linear Regression:")
+print("StandardScaler KNN Regression:")
 pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), FunctionTransformer(addInteractionPotentialsFeatures),
-    StandardScaler(), PolynomialFeatures(3), LinearRegression()) 
+    StandardScaler(), PolynomialFeatures(2), KNeighborsRegressor(n_jobs=-1)) 
 pipeline.fit(X_train, y_train)
 y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
 print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
 
-predictAndGenerateSubmissionCsv("acc_ip_pd_StandardScaler_d3")
+predictAndGenerateSubmissionCsv("acc_ip_pd_StandardScaler_knn")
 
-print("MaxAbsScaler Linear Regression:")
-pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), FunctionTransformer(addInteractionPotentialsFeatures),
-    MaxAbsScaler(), PolynomialFeatures(3), LinearRegression()) 
-pipeline.fit(X_train, y_train)
-y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
-
-predictAndGenerateSubmissionCsv("acc_ip_pd_MaxAbsScaler_d3")
 
