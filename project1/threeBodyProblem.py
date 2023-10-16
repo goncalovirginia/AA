@@ -138,9 +138,9 @@ def toONNX(pipeline, name) :
     print("\nomnx_predict:\n {}".format(pred_onx))
 
 """
+# Formatting for original X_train.csv file to work with model
 X_train = pd.read_csv("project1/X_train.csv").drop(columns=['Id'])
 X = format_X_Train_for_input(X_train)
-X = addFeatureEngineering(X)
 y = addFeatureEngineering(X_train)
 """
 
@@ -151,7 +151,7 @@ y = pd.read_csv("project1/y_train_a_d_p.csv")
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.2)
 
 print("Poly3 MaxAbsScaler Linear:")
-pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), FunctionTransformer(addInteractionPotentialsFeatures),
+pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), FunctionTransformer(addPairPotentialsFeatures),
     PolynomialFeatures(3), MaxAbsScaler(), LinearRegression()) 
 pipeline.fit(X_train, y_train)
 y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
