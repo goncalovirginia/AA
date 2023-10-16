@@ -122,7 +122,7 @@ def toONNX(pipeline, name) :
     initial_type = [('numfeat', FloatTensorType([None, 25]))]
     model_onnx = sklearn_to_onnx(pipeline, initial_types=initial_type)
 
-    with open("model_acc_ip_pd_MAbsS_d3.onnx", "wb") as f:
+    with open("{}.onnx".format(name), "wb") as f:
         f.write(model_onnx.SerializeToString())
 
     sess = rt.InferenceSession("{}.onnx".format(name))#, providers=["CPUExecutionProvider"])
