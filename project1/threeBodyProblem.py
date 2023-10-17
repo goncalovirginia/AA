@@ -125,17 +125,21 @@ def toONNX(pipeline, name) :
     with open("{}.onnx".format(name), "wb") as f:
         f.write(model_onnx.SerializeToString())
 
-    sess = rt.InferenceSession("{}.onnx".format(name))#, providers=["CPUExecutionProvider"])
+def runONNX(filename) :
+    sess = rt.InferenceSession(filename)#, providers=["CPUExecutionProvider"])
 
     input_data = np.array(X_test, dtype=np.float32)
     input_data = {'numfeat': input_data}
     label_name = sess.get_outputs()[0].name
     output = sess.run([label_name], input_data)
-    pred_onx = pd.DataFrame(output[0], columns=y.columns)
+    onnx_predicted = pd.DataFrame(output[0], columns=y.columns)
 
-    print("\nY:\n  {}".format(y_test))
-    print("\nskl_predict:\n  {}".format(y_predicted))
-    print("\nomnx_predict:\n {}".format(pred_onx))
+    print("y_test:")
+    print(y_test)
+    print("y_predicted:")
+    print(y_predicted)
+    print("onnx predict:")
+    print(onnx_predicted)
 
 """
 # Formatting for original X_train.csv file to work with model
@@ -153,22 +157,24 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.2)
 print("Poly3 MaxAbsScaler Linear:")
 pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), FunctionTransformer(addPairPotentialsFeatures),
     PolynomialFeatures(3), MaxAbsScaler(), LinearRegression()) 
-pipeline.fit(X_train, y_train)
-y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
+pipeline.fit(X_train.to_numpy(dtype=np.float32), y_train.to_numpy(dtype=np.float32))
+y_predicted = pd.DataFrame(pipeline.predict(X_test.to_numpy(dtype=np.float32)), columns=y.columns)
 rmse = math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))
 print("RMSE: {}".format(rmse))
 
 name = 'poly3_maxabs_linear_{}'.format(rmse)
 predictAndGenerateSubmissionCsv(name)
 toONNX(pipeline, name)
+runONNX("{}.onnx".format(name))
 
 """
-print("StandardScaler KNN Regression:")
+print("MaxAbsScaler KNN Regression:")
 pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), FunctionTransformer(addInteractionPotentialsFeatures),
-    StandardScaler(), KNeighborsRegressor()) 
+    MaxAbsScaler(), KNeighborsRegressor(n_jobs=-1)) 
 pipeline.fit(X_train, y_train)
 y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=y.columns)
-print("RMSE: {}".format(math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))))
+rmse = math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))
+print("RMSE: {}".format(rmse))
 """
 
 

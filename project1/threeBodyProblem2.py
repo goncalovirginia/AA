@@ -14,6 +14,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import MaxAbsScaler
+from sklearn.preprocessing import StandardScaler
 import math
 from skl2onnx import to_onnx
 from skl2onnx.common.data_types import FloatTensorType, StringTensorType
@@ -23,7 +24,7 @@ LAST_ROW = 1285000
 NUM_SAMPLES = 5000
 SAMPLE_LENGTH = 257
 
-dataFrame = pd.read_csv("project1/X_train3.csv").drop(columns=['t'])
+dataFrame = pd.read_csv("project1/y_train_a_d_p.csv")
 
 def bodyCoords(body, rows) :
     column = 4 * (body - 1 ) + 1
@@ -51,9 +52,10 @@ def plotAllSamples() :
 def createXy(numSamples) :
     X = []
     y = []
+    dfnp = dataFrame.to_numpy()
 
     for sampleStart in range(0, numSamples*SAMPLE_LENGTH, SAMPLE_LENGTH) :
-        sample = dataFrame.iloc[sampleStart:sampleStart+SAMPLE_LENGTH].to_numpy()
+        sample = dfnp[sampleStart:sampleStart+SAMPLE_LENGTH]
         X.extend(sample[0:SAMPLE_LENGTH-1])
         y.extend(sample[1:SAMPLE_LENGTH])
 
@@ -116,22 +118,26 @@ def exportModel(pipeline, rmse) :
 X, y = createXy(NUM_SAMPLES)
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.2)
 
-print("Linear Regression:")
+print(X_train)
+print(y_train)
+
+print("Poly2 MaxAbs Linear:")
 pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), 
-    PolynomialFeatures(3), LinearRegression())
+    PolynomialFeatures(2), MaxAbsScaler(), LinearRegression())
 pipeline.fit(X_train, y_train)
 y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=dataFrame.columns)
-rmse = mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], squared=False)
+rmse = math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))
 print("RMSE: {}".format(rmse))
 
-predictRecursively(pipeline, X.iloc[[0]])
+#predictRecursively(pipeline, X.iloc[[0]])
 
-print("Acceleration MaxAbsScaler Linear Regression:")
+print("Poly2 Acc Potentials MaxAbsScaler Linear:")
 pipeline = make_pipeline(#FunctionTransformer(addAccelerationsFeatures), FunctionTransformer(addPairDistancesFeatures), 
-    make_column_transformer((MaxAbsScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3']), remainder='passthrough'), 
-    PolynomialFeatures(3), LinearRegression())
+    PolynomialFeatures(2),
+    make_column_transformer((StandardScaler(), ['a_x_1', 'a_y_1', 'a_x_2', 'a_y_2', 'a_x_3', 'a_y_3', 'p_1_2', 'p_1_3', 'p_2_3']), remainder=MaxAbsScaler()), 
+    LinearRegression())
 pipeline.fit(X_train, y_train)
 y_predicted = pd.DataFrame(pipeline.predict(X_test), columns=dataFrame.columns)
-rmse = mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], squared=False)
+rmse = math.sqrt(mean_squared_error(y_test[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']], y_predicted[['x_1', 'y_1', 'x_2', 'y_2', 'x_3', 'y_3']]))
 print("RMSE: {}".format(rmse))
 
